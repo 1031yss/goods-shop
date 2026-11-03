@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>결제 실패 · 굿즈샵</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+</head>
+<body>
+  <header id="nav"></header>
+  <main>
+    <div class="result card">
+      <div class="result-icon">😢</div>
+      <h1>결제가 완료되지 않았어요</h1>
+      <p class="subtitle" id="reason"></p>
+      <dl>
+        <dt>오류 코드</dt><dd id="code">-</dd>
+      </dl>
+      <a class="btn" href="index.html">상품 목록으로</a>
+    </div>
+  </main>
+
+  <script>
+    // 토스가 실패 이유를 주소 뒤에 붙여 보내준다
+    const params = new URLSearchParams(location.search);
+    document.getElementById("reason").textContent = params.get("message") || "결제가 취소되었거나 실패했어요.";
+    document.getElementById("code").textContent = params.get("code") || "-";
+  </script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>관리자 · 굿즈샵</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+</head>
+<body>
+  <header id="nav"></header>
+  <main>
+    <div id="denied" class="result card" hidden>
+      <div class="result-icon">🔒</div>
+      <h1>관리자만 볼 수 있어요</h1>
+      <p class="subtitle">관리자 계정으로 로그인해 주세요.</p>
+      <a class="btn" href="index.html">상품 목록으로</a>
+    </div>
+
+    <div id="admin" hidden>
+      <h1>전체 결제 내역</h1>
+      <p class="subtitle">모든 회원의 주문을 볼 수 있어요.</p>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-label">총 매출 (결제 완료)</div><div class="stat-value" id="s-revenue">-</div></div>
+        <div class="stat"><div class="stat-label">결제 완료 건수</div><div class="stat-value" id="s-paid">-</div></div>
+        <div class="stat"><div class="stat-label">구매한 회원 수</div><div class="stat-value" id="s-users">-</div></div>
+      </div>
+
+      <div class="toolbar">
+        <label for="filter" style="margin:0">상태</label>
+        <select id="filter">
+          <option value="paid">결제 완료</option>
+          <option value="all">전체</option>
+          <option value="pending">결제 대기</option>
+          <option value="failed">결제 실패</option>
+        </select>
+      </div>
+
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>주문일시</th>
+              <th>회원 이메일</th>
+              <th>상품</th>
+              <th class="num">수량</th>
+              <th class="num">금액</th>
+              <th>결제수단</th>
+              <th>상태</th>
+              <th>주문번호</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let orders = [];
+
+    function render() {
+      const filter = document.getElementById("filter").value;
+      const list = filter === "all" ? orders : orders.filter((o) => o.status === filter);
+      const rows = document.getElementById("rows");
+      if (!list.length) {
+        rows.innerHTML = '<tr><td colspan="8" class="empty">해당하는 주문이 없어요.</td></tr>';
+        return;
+      }
+      rows.innerHTML = list.map((o) => `
+        <tr>
+          <td>${formatDate(o.approved_at || o.created_at)}</td>
+          <td>${escapeHtml(o.user_email)}</td>
+          <td>${escapeHtml(o.product_name)}</td>
+          <td class="num">${o.quantity}</td>
+          <td class="num">${won(o.amount)}</td>
+          <td>${escapeHtml(o.method || "-")}</td>
+          <td>${statusBadge(o.status)}</td>
+          <td>${escapeHtml(o.order_id)}</td>
+        </tr>`).join("");
+    }
+
+    async function init() {
+      const user = await requireLogin();
+      if (!user) return;
+      // 화면 차단은 편의용이고, 실제 데이터 보호는 DB의 RLS 규칙이 한다
+      if (!isAdmin(user)) {
+        document.getElementById("denied").hidden = false;
+        return;
+      }
+      document.getElementById("admin").hidden = false;
+
+      const { data, error } = await sb.from("orders").select("*").order("created_at", { ascending: false });
+      if (error) {
+        document.getElementById("rows").innerHTML =
+          `<tr><td colspan="8" class="empty">불러오지 못했어요: ${escapeHtml(error.message)}</td></tr>`;
+        return;
+      }
+      orders = data;
+
+      const paid = orders.filter((o) => o.status === "paid");
+      document.getElementById("s-revenue").textContent = won(paid.reduce((sum, o) => sum + o.amount, 0));
+      document.getElementById("s-paid").textContent = paid.length + "건";
+      document.getElementById("s-users").textContent = new Set(paid.map((o) => o.user_id)).size + "명";
+      render();
+    }
+
+    document.getElementById("filter").addEventListener("change", render);
+    init();
+  </script>
+</body>
+</html>

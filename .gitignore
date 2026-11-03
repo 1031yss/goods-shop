@@ -1,0 +1,12 @@
+# 비밀 값(DB 비밀번호, service_role 키) — 절대 올리지 않기
+.env
+.env.*
+
+# Supabase CLI 임시 파일
+supabase/.temp/
+supabase/.branches/
+
+# 에디터/OS
+.vscode/
+.DS_Store
+Thumbs.db

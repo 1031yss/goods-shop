@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>내 결제 내역 · 굿즈샵</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+</head>
+<body>
+  <header id="nav"></header>
+  <main>
+    <h1>내 결제 내역</h1>
+    <p class="subtitle">결제 완료된 주문과 진행하다 멈춘 주문을 볼 수 있어요.</p>
+    <div class="card table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>주문일시</th>
+            <th>상품</th>
+            <th class="num">수량</th>
+            <th class="num">금액</th>
+            <th>결제수단</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody id="rows"><tr><td colspan="6" class="empty">불러오는 중…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    async function loadOrders() {
+      const user = await requireLogin();
+      if (!user) return;
+
+      // 관리자는 RLS상 전체 주문을 볼 수 있으므로, 이 페이지에서는 user_id로 본인 주문만 거른다
+      const { data, error } = await sb
+        .from("orders")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      const rows = document.getElementById("rows");
+      if (error) {
+        rows.innerHTML = `<tr><td colspan="6" class="empty">불러오지 못했어요: ${escapeHtml(error.message)}</td></tr>`;
+        return;
+      }
+      if (!data.length) {
+        rows.innerHTML = '<tr><td colspan="6" class="empty">아직 결제 내역이 없어요. <a href="index.html">상품 보러 가기</a></td></tr>';
+        return;
+      }
+      rows.innerHTML = data.map((o) => `
+        <tr>
+          <td>${formatDate(o.approved_at || o.created_at)}</td>
+          <td>${escapeHtml(o.product_name)}</td>
+          <td class="num">${o.quantity}</td>
+          <td class="num">${won(o.amount)}</td>
+          <td>${escapeHtml(o.method || "-")}</td>
+          <td>${statusBadge(o.status)}</td>
+        </tr>`).join("");
+    }
+    loadOrders();
+  </script>
+</body>
+</html>

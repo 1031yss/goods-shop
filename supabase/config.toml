@@ -1,0 +1,5 @@
+project_id = "cbsezulyzfwogeqedmjr"
+
+[functions.confirm-payment]
+# 함수 안에서 직접 로그인 토큰을 검사하므로 게이트웨이 JWT 검사는 끈다
+verify_jwt = false

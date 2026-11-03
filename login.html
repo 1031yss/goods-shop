@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>로그인 · 굿즈샵</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+</head>
+<body>
+  <header id="nav"></header>
+  <main>
+    <div class="auth-box card">
+      <div class="tabs">
+        <button type="button" class="tab active" data-mode="login">로그인</button>
+        <button type="button" class="tab" data-mode="signup">회원가입</button>
+      </div>
+
+      <form id="auth-form">
+        <label for="email">이메일</label>
+        <input type="email" id="email" required autocomplete="email" placeholder="you@example.com" />
+
+        <label for="password">비밀번호</label>
+        <input type="password" id="password" required minlength="6" autocomplete="current-password" placeholder="6자 이상" />
+
+        <div id="confirm-wrap" hidden>
+          <label for="password2">비밀번호 확인</label>
+          <input type="password" id="password2" minlength="6" autocomplete="new-password" />
+        </div>
+
+        <div id="msg" class="msg"></div>
+
+        <div class="form-actions">
+          <button type="submit" id="submit-btn" class="btn">로그인</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    let mode = "login";
+    const form = document.getElementById("auth-form");
+    const msg = document.getElementById("msg");
+    const submitBtn = document.getElementById("submit-btn");
+    const confirmWrap = document.getElementById("confirm-wrap");
+
+    // 로그인 후 돌아갈 페이지 (우리 사이트 안의 페이지만 허용)
+    function nextPage() {
+      const next = new URLSearchParams(location.search).get("next") || "";
+      return /^[a-z]+\.html(\?[\w=&%-]*)?$/.test(next) ? next : "index.html";
+    }
+
+    function showMsg(text, type) {
+      msg.className = "msg msg-" + type;
+      msg.textContent = text;
+    }
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        mode = tab.dataset.mode;
+        document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
+        confirmWrap.hidden = mode !== "signup";
+        submitBtn.textContent = mode === "signup" ? "회원가입" : "로그인";
+        document.getElementById("password").autocomplete = mode === "signup" ? "new-password" : "current-password";
+        showMsg("", "info");
+      });
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (mode === "signup" && password !== document.getElementById("password2").value) {
+        showMsg("비밀번호 확인이 일치하지 않아요.", "error");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      const { error } = mode === "signup"
+        ? await sb.auth.signUp({ email, password })
+        : await sb.auth.signInWithPassword({ email, password });
+      submitBtn.disabled = false;
+
+      if (error) {
+        const friendly = {
+          "Invalid login credentials": "이메일 또는 비밀번호가 맞지 않아요.",
+          "User already registered": "이미 가입된 이메일이에요. 로그인해 주세요.",
+        };
+        showMsg(friendly[error.message] || error.message, "error");
+        return;
+      }
+      // 이메일 인증을 껐기 때문에 가입하면 바로 로그인된다
+      location.href = nextPage();
+    });
+
+    // 이미 로그인한 상태면 바로 이동
+    getUser().then((u) => { if (u) location.href = nextPage(); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>상품 결제 · 굿즈샵</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="https://js.tosspayments.com/v2/standard"></script>
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+</head>
+<body>
+  <header id="nav"></header>
+  <main>
+    <p><a href="index.html">← 상품 목록</a></p>
+    <div id="detail" class="detail" hidden>
+      <div id="thumb" class="product-thumb"></div>
+      <div class="card">
+        <h1 id="name"></h1>
+        <p id="desc" class="subtitle"></p>
+        <div class="product-price" id="price"></div>
+
+        <div class="qty-row">
+          <label for="qty" style="margin:0">수량</label>
+          <input type="number" id="qty" value="1" min="1" max="99" />
+        </div>
+        <div class="total">총 결제금액 <span id="total"></span></div>
+
+        <div id="payment-method"></div>
+        <div id="agreement"></div>
+
+        <div id="msg" class="msg"></div>
+        <button type="button" id="pay-btn" class="btn" disabled>결제하기</button>
+        <p class="notice" style="margin-top:16px">🧪 테스트 결제예요. 결제창에서 아무 카드나 골라 진행해도 실제 돈은 나가지 않아요.</p>
+      </div>
+    </div>
+    <div id="page-msg" class="msg"></div>
+  </main>
+
+  <script>
+    const productId = Number(new URLSearchParams(location.search).get("id"));
+    const msg = document.getElementById("msg");
+    const payBtn = document.getElementById("pay-btn");
+    const qtyInput = document.getElementById("qty");
+    let product, widgets;
+
+    function showMsg(text, type = "error") {
+      msg.className = "msg msg-" + type;
+      msg.textContent = text;
+    }
+
+    function quantity() {
+      return Math.min(99, Math.max(1, Math.floor(Number(qtyInput.value) || 1)));
+    }
+
+    async function init() {
+      // 결제하려면 로그인이 필요하다
+      const user = await requireLogin();
+      if (!user) return;
+
+      const { data, error } = await sb.from("products").select("*").eq("id", productId).maybeSingle();
+      if (error || !data) {
+        const pm = document.getElementById("page-msg");
+        pm.className = "msg msg-error";
+        pm.textContent = "상품을 찾을 수 없어요.";
+        return;
+      }
+      product = data;
+      document.title = product.name + " · 굿즈샵";
+      document.getElementById("thumb").innerHTML = product.image_url
+        ? `<img src="${escapeHtml(product.image_url)}" alt="">`
+        : escapeHtml(product.emoji);
+      document.getElementById("name").textContent = product.name;
+      document.getElementById("desc").textContent = product.description;
+      document.getElementById("price").textContent = won(product.price);
+      document.getElementById("total").textContent = won(product.price);
+      document.getElementById("detail").hidden = false;
+
+      // 토스 결제위젯 준비 (customerKey = 우리 사이트의 사용자 ID)
+      const tossPayments = TossPayments(TOSS_CLIENT_KEY);
+      widgets = tossPayments.widgets({ customerKey: user.id });
+      await widgets.setAmount({ currency: "KRW", value: product.price });
+      await Promise.all([
+        widgets.renderPaymentMethods({ selector: "#payment-method", variantKey: "DEFAULT" }),
+        widgets.renderAgreement({ selector: "#agreement", variantKey: "AGREEMENT" }),
+      ]);
+      payBtn.disabled = false;
+    }
+
+    qtyInput.addEventListener("change", async () => {
+      qtyInput.value = quantity();
+      const total = product.price * quantity();
+      document.getElementById("total").textContent = won(total);
+      if (widgets) await widgets.setAmount({ currency: "KRW", value: total });
+    });
+
+    payBtn.addEventListener("click", async () => {
+      payBtn.disabled = true;
+      showMsg("", "info");
+
+      // 1) 주문을 먼저 DB에 만든다. 금액은 DB 트리거가 상품 가격 × 수량으로 계산한다.
+      const { data: order, error } = await sb
+        .from("orders")
+        .insert({ product_id: product.id, quantity: quantity() })
+        .select()
+        .single();
+      if (error) {
+        showMsg("주문을 만들지 못했어요: " + error.message);
+        payBtn.disabled = false;
+        return;
+      }
+
+      // 2) DB가 계산한 금액으로 토스 결제창을 연다
+      try {
+        await widgets.setAmount({ currency: "KRW", value: order.amount });
+        const user = await getUser();
+        await widgets.requestPayment({
+          orderId: order.order_id,
+          orderName: order.quantity > 1 ? `${order.product_name} ${order.quantity}개` : order.product_name,
+          customerEmail: user.email,
+          successUrl: new URL("success.html", location.href).href,
+          failUrl: new URL("fail.html", location.href).href,
+        });
+      } catch (err) {
+        // 사용자가 결제창을 닫은 경우 등
+        showMsg(err.message || "결제를 진행하지 못했어요.");
+        payBtn.disabled = false;
+      }
+    });
+
+    init().catch((err) => showMsg("결제 화면을 준비하지 못했어요: " + err.message));
+  </script>
+</body>
+</html>
