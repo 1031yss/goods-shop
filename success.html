@@ -3,19 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>결제 확인 · 굿즈샵</title>
+  <title>결제 확인 | 굿즈샵</title>
   <link rel="stylesheet" href="css/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/common.js"></script>
 </head>
 <body>
-  <header id="nav"></header>
-  <main>
-    <div class="result card" id="result">
-      <div class="result-icon">⏳</div>
-      <h1>결제를 확인하고 있어요</h1>
-      <p class="subtitle">잠시만 기다려 주세요…</p>
+  <main class="narrow">
+    <div id="result" class="result">
+      <h1>결제를 확인하고 있습니다</h1>
+      <p>이 화면을 닫지 말고 잠시 기다려 주세요.</p>
     </div>
   </main>
 
@@ -24,9 +22,8 @@
 
     function showFail(text) {
       box.innerHTML = `
-        <div class="result-icon">⚠️</div>
-        <h1>결제를 완료하지 못했어요</h1>
-        <p class="subtitle">${escapeHtml(text)}</p>
+        <h1>결제를 완료하지 못했습니다</h1>
+        <p>${escapeHtml(text)}</p>
         <a class="btn" href="index.html">상품 목록으로</a>`;
     }
 
@@ -41,7 +38,7 @@
         orderId: params.get("orderId"),
         amount: Number(params.get("amount")),
       };
-      if (!body.paymentKey || !body.orderId) return showFail("결제 정보가 없어요.");
+      if (!body.paymentKey || !body.orderId) return showFail("결제 정보가 없습니다. 상품 목록에서 다시 결제해 주세요.");
 
       // 서버 함수가 금액을 검증하고 토스에 최종 승인을 요청한다
       const { data, error } = await sb.functions.invoke("confirm-payment", { body });
@@ -53,16 +50,15 @@
 
       const o = data.order;
       box.innerHTML = `
-        <div class="result-icon">🎉</div>
-        <h1>결제가 완료되었어요</h1>
+        <h1>결제가 완료되었습니다</h1>
         <dl>
-          <dt>상품</dt><dd>${escapeHtml(o.product_name)} × ${o.quantity}</dd>
+          <dt>상품</dt><dd>${escapeHtml(o.product_name)}</dd>
           <dt>결제 금액</dt><dd>${won(o.amount)}</dd>
           <dt>결제 수단</dt><dd>${escapeHtml(o.method || "-")}</dd>
           <dt>주문번호</dt><dd>${escapeHtml(o.order_id)}</dd>
         </dl>
         <a class="btn" href="orders.html">내 결제 내역 보기</a>
-        <a class="btn btn-secondary" href="index.html">쇼핑 계속하기</a>`;
+        <a class="btn btn-light" href="index.html">상품 더 보기</a>`;
     }
 
     confirmPayment().catch((err) => showFail(err.message));

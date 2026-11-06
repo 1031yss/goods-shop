@@ -3,40 +3,36 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>굿즈샵</title>
+  <title>상품 목록 | 굿즈샵</title>
   <link rel="stylesheet" href="css/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/common.js"></script>
 </head>
 <body>
-  <header id="nav"></header>
   <main>
-    <h1>굿즈 상품</h1>
-    <p class="subtitle">마음에 드는 굿즈를 골라보세요.</p>
-    <div class="notice">🧪 테스트 결제 모드예요. 결제를 해도 실제로 돈이 나가지 않아요.</div>
-    <div id="products" class="product-grid"></div>
-    <div id="msg" class="msg"></div>
+    <h1>상품 목록</h1>
+    <ul id="list" class="product-grid"></ul>
+    <p id="msg" class="msg"></p>
   </main>
 
   <script>
     async function loadProducts() {
       const { data, error } = await sb.from("products").select("*").order("id");
-      const box = document.getElementById("products");
       if (error) {
-        document.getElementById("msg").className = "msg msg-error";
-        document.getElementById("msg").textContent = "상품을 불러오지 못했어요: " + error.message;
+        const msg = document.getElementById("msg");
+        msg.className = "msg msg-error";
+        msg.textContent = "상품을 불러오지 못했습니다. 새로고침해 주세요.";
         return;
       }
-      box.innerHTML = data.map((p) => `
-        <a class="product-card" href="product.html?id=${p.id}">
-          <div class="product-thumb">${p.image_url ? `<img src="${escapeHtml(p.image_url)}" alt="">` : escapeHtml(p.emoji)}</div>
-          <div class="product-info">
-            <p class="product-name">${escapeHtml(p.name)}</p>
-            <p class="product-desc">${escapeHtml(p.description)}</p>
+      document.getElementById("list").innerHTML = data.map((p) => `
+        <li>
+          <a class="product-link" href="product.html?id=${p.id}">
+            <img class="product-photo" src="${escapeHtml(p.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" />
+            <div class="product-name">${escapeHtml(p.name)}</div>
             <div class="product-price">${won(p.price)}</div>
-          </div>
-        </a>`).join("");
+          </a>
+        </li>`).join("");
     }
     loadProducts();
   </script>
