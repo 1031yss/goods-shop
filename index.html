@@ -11,13 +11,11 @@
 </head>
 <body>
   <section class="hero">
-    <div class="hero-inner">
-      <div>
-        <h1>오늘 밤 덮을 것부터<br />골라 보세요</h1>
-        <p>누빔 매트리스커버와 침구 세트, 문걸이 옷걸이를 모았습니다. 마음에 드는 상품은 테스트 결제로 바로 구매해 볼 수 있습니다.</p>
-        <a class="btn hero-btn" href="#products">상품 보러 가기</a>
-      </div>
-      <div id="hero-photos" class="hero-photos" aria-hidden="true"></div>
+    <img id="hero-img" class="hero-img" alt="" referrerpolicy="no-referrer" hidden />
+    <div class="hero-text">
+      <h1>잠자리를 바꾸는<br />가장 쉬운 방법</h1>
+      <p>매트리스커버와 침구 세트, 문걸이 옷걸이를 모았습니다. 마음에 드는 상품은 테스트 결제로 바로 구매해 볼 수 있습니다.</p>
+      <a class="hero-btn" href="#products">상품 보러 가기</a>
     </div>
   </section>
 
@@ -45,11 +43,13 @@
           </a>
         </li>`).join("");
 
-      // 히어로에는 상품 사진 3장을 보여 준다
-      document.getElementById("hero-photos").innerHTML = [data[0], data[3], data[1]]
-        .filter(Boolean)
-        .map((p) => `<img src="${escapeHtml(p.image_url)}" alt="" referrerpolicy="no-referrer" />`)
-        .join("");
+      // 히어로 배경은 어두운 톤의 상품 사진 (5번째 상품)
+      const heroImg = document.getElementById("hero-img");
+      const heroProduct = data[4] || data[0];
+      if (heroProduct) {
+        heroImg.src = heroProduct.image_url;
+        heroImg.hidden = false;
+      }
     }
     loadProducts();
   </script>

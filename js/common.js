@@ -27,7 +27,7 @@ async function requireLogin() {
 async function renderHeader() {
   const user = await getUser();
 
-  let links = '<a href="index.html">상품</a>';
+  let links = "";
   if (user) {
     links += '<a href="orders.html">내 결제 내역</a>';
     if (isAdmin(user)) links += '<a href="admin.html">관리자</a>';
