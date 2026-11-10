@@ -10,8 +10,19 @@
   <script src="js/common.js"></script>
 </head>
 <body>
+  <section class="hero">
+    <div class="hero-inner">
+      <div>
+        <h1>오늘 밤 덮을 것부터<br />골라 보세요</h1>
+        <p>누빔 매트리스커버와 침구 세트, 문걸이 옷걸이를 모았습니다. 마음에 드는 상품은 테스트 결제로 바로 구매해 볼 수 있습니다.</p>
+        <a class="btn hero-btn" href="#products">상품 보러 가기</a>
+      </div>
+      <div id="hero-photos" class="hero-photos" aria-hidden="true"></div>
+    </div>
+  </section>
+
   <main>
-    <h1>상품 목록</h1>
+    <h2 id="products" class="section-title">상품 목록</h2>
     <ul id="list" class="product-grid"></ul>
     <p id="msg" class="msg"></p>
   </main>
@@ -33,6 +44,12 @@
             <div class="product-price">${won(p.price)}</div>
           </a>
         </li>`).join("");
+
+      // 히어로에는 상품 사진 3장을 보여 준다
+      document.getElementById("hero-photos").innerHTML = [data[0], data[3], data[1]]
+        .filter(Boolean)
+        .map((p) => `<img src="${escapeHtml(p.image_url)}" alt="" referrerpolicy="no-referrer" />`)
+        .join("");
     }
     loadProducts();
   </script>

@@ -31,9 +31,10 @@ async function renderHeader() {
   if (user) {
     links += '<a href="orders.html">내 결제 내역</a>';
     if (isAdmin(user)) links += '<a href="admin.html">관리자</a>';
-    links += '<button type="button" id="logout-btn">로그아웃</button>';
+    links += '<button type="button" id="logout-btn" class="nav-pill nav-logout">로그아웃</button>';
   } else {
     links += '<a href="login.html">로그인</a>';
+    links += '<a href="login.html?mode=signup" class="nav-pill nav-signup">회원가입</a>';
   }
 
   document.body.insertAdjacentHTML("afterbegin", `
